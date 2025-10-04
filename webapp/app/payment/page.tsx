@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import { CreditCard, Lock, ArrowLeft } from 'lucide-react';
 import { formatCurrency } from '@/lib/utils';
-import Link from 'next/link';
+import { Order } from '@/lib/db/schema';
 
-export default function PaymentPage() {
+function PaymentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isProcessing, setIsProcessing] = useState(false);
@@ -15,7 +15,7 @@ export default function PaymentPage() {
   const [cardName, setCardName] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
-  const [errors, setErrors] = useState<any>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const amount = searchParams.get('amount');
   const orderId = searchParams.get('order_id');
@@ -54,7 +54,7 @@ export default function PaymentPage() {
   };
 
   const validateForm = () => {
-    const newErrors: any = {};
+    const newErrors: Record<string, string> = {};
 
     if (!cardNumber || cardNumber.replace(/\s/g, '').length < 16) {
       newErrors.cardNumber = 'Please enter a valid card number';
@@ -90,7 +90,7 @@ export default function PaymentPage() {
 
     // Update order payment status in localStorage
     const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const orderIndex = orders.findIndex((o: any) => o.id === orderId);
+    const orderIndex = orders.findIndex((o: Order) => o.id === orderId);
     if (orderIndex !== -1) {
       orders[orderIndex].payment_status = 'paid';
       localStorage.setItem('orders', JSON.stringify(orders));
@@ -106,7 +106,7 @@ export default function PaymentPage() {
   const handleCancel = () => {
     // Mark order as cancelled
     const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const orderIndex = orders.findIndex((o: any) => o.id === orderId);
+    const orderIndex = orders.findIndex((o: Order) => o.id === orderId);
     if (orderIndex !== -1) {
       orders[orderIndex].status = 'cancelled';
       orders[orderIndex].payment_status = 'cancelled';
@@ -326,5 +326,19 @@ export default function PaymentPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600 text-lg">Loading payment page...</p>
+        </div>
+      </div>
+    }>
+      <PaymentPageContent />
+    </Suspense>
   );
 }

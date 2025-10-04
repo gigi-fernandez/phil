@@ -1,57 +1,69 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { MapPin, Search, Navigation } from 'lucide-react';
+import { MapPin, Navigation } from 'lucide-react';
 
 interface AddressMapPickerProps {
   address: string;
   onAddressChange: (address: string, coordinates?: { lat: number; lng: number }) => void;
 }
 
+type GoogleMap = {
+  setCenter: (location: { lat: number; lng: number }) => void;
+  setZoom: (zoom: number) => void;
+  addListener: (event: string, handler: (e: { latLng?: { lat: () => number; lng: () => number } }) => void) => void;
+};
+
+type GoogleMarker = {
+  setPosition: (location: { lat: number; lng: number }) => void;
+  getPosition: () => { lat: () => number; lng: () => number } | null;
+  addListener: (event: string, handler: () => void) => void;
+};
+
 export default function AddressMapPicker({ address, onAddressChange }: AddressMapPickerProps) {
   const [searchQuery, setSearchQuery] = useState(address);
   const [isLoading, setIsLoading] = useState(false);
-  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestions, setSuggestions] = useState<Array<{
+    description: string;
+    place_id: string;
+    structured_formatting: {
+      main_text: string;
+      secondary_text: string;
+    };
+  }>>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [map, setMap] = useState<google.maps.Map | null>(null);
-  const [marker, setMarker] = useState<google.maps.Marker | null>(null);
+  const [map, setMap] = useState<GoogleMap | null>(null);
+  const [marker, setMarker] = useState<GoogleMarker | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
 
-  // Initialize Google Maps
-  useEffect(() => {
-    // Check if API key is configured
-    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
-      console.warn('Google Maps API key not configured. Map features disabled.');
-      return;
-    }
+  const reverseGeocode = useCallback(async (lat: number, lng: number) => {
+    if (!window.google) return;
 
-    // Prevent multiple loads
-    if (window.google?.maps) {
-      initializeMap();
-      return;
-    }
+    const geocoder = new google.maps.Geocoder();
+    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+      if (status === 'OK' && results && results[0]) {
+        // Filter for Australian addresses
+        const australianResult = results.find(r =>
+          r.formatted_address.includes('Australia') ||
+          r.formatted_address.includes('NSW') ||
+          r.formatted_address.includes('VIC') ||
+          r.formatted_address.includes('QLD')
+        );
 
-    // Check if script already exists
-    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
-    if (existingScript) {
-      return;
-    }
+        const formattedAddress = australianResult?.formatted_address || results[0].formatted_address;
+        setSearchQuery(formattedAddress);
+        onAddressChange(formattedAddress, { lat, lng });
+      } else {
+        // If geocoding fails, provide coordinates as fallback
+        const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+        setSearchQuery(fallbackAddress);
+        onAddressChange(fallbackAddress, { lat, lng });
+        console.warn('Geocoding failed:', status);
+      }
+    });
+  }, [onAddressChange]);
 
-    if (typeof window !== 'undefined' && !window.google) {
-      const script = document.createElement('script');
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = initializeMap;
-      script.onerror = () => {
-        console.error('Failed to load Google Maps');
-      };
-      document.head.appendChild(script);
-    }
-  }, []);
-
-  const initializeMap = () => {
+  const initializeMap = useCallback(() => {
     const mapElement = document.getElementById('map');
     if (!mapElement || !window.google) {
       console.log('Map element or Google Maps not ready');
@@ -91,41 +103,50 @@ export default function AddressMapPicker({ address, onAddressChange }: AddressMa
 
     mapInstance.addListener('click', (e: google.maps.MapMouseEvent) => {
       if (e.latLng) {
-        markerInstance.setPosition(e.latLng);
-        reverseGeocode(e.latLng.lat(), e.latLng.lng());
+        const lat = e.latLng.lat();
+        const lng = e.latLng.lng();
+        markerInstance.setPosition({ lat, lng });
+        reverseGeocode(lat, lng);
       }
     });
 
     setMap(mapInstance);
     setMarker(markerInstance);
-  };
+  }, [map, userLocation, reverseGeocode]);
 
-  const reverseGeocode = async (lat: number, lng: number) => {
-    if (!window.google) return;
-    
-    const geocoder = new google.maps.Geocoder();
-    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-      if (status === 'OK' && results && results[0]) {
-        // Filter for Australian addresses
-        const australianResult = results.find(r => 
-          r.formatted_address.includes('Australia') || 
-          r.formatted_address.includes('NSW') ||
-          r.formatted_address.includes('VIC') ||
-          r.formatted_address.includes('QLD')
-        );
-        
-        const formattedAddress = australianResult?.formatted_address || results[0].formatted_address;
-        setSearchQuery(formattedAddress);
-        onAddressChange(formattedAddress, { lat, lng });
-      } else {
-        // If geocoding fails, provide coordinates as fallback
-        const fallbackAddress = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-        setSearchQuery(fallbackAddress);
-        onAddressChange(fallbackAddress, { lat, lng });
-        console.warn('Geocoding failed:', status);
-      }
-    });
-  };
+  // Initialize Google Maps
+  useEffect(() => {
+    // Check if API key is configured
+    const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+    if (!apiKey || apiKey === 'your_google_maps_api_key_here') {
+      console.warn('Google Maps API key not configured. Map features disabled.');
+      return;
+    }
+
+    // Prevent multiple loads
+    if (window.google?.maps) {
+      initializeMap();
+      return;
+    }
+
+    // Check if script already exists
+    const existingScript = document.querySelector('script[src*="maps.googleapis.com"]');
+    if (existingScript) {
+      return;
+    }
+
+    if (typeof window !== 'undefined' && !window.google) {
+      const script = document.createElement('script');
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+      script.async = true;
+      script.defer = true;
+      script.onload = initializeMap;
+      script.onerror = () => {
+        console.error('Failed to load Google Maps');
+      };
+      document.head.appendChild(script);
+    }
+  }, [initializeMap]);
 
   const searchPlaces = useCallback(async (query: string) => {
     if (!window.google || query.length < 3) {
@@ -313,7 +334,7 @@ export default function AddressMapPicker({ address, onAddressChange }: AddressMa
 
       {/* Instructions */}
       <div className="text-sm text-gray-600">
-        <p>• For "Use My Current Location", allow browser location access when prompted</p>
+        <p>• For &quot;Use My Current Location&quot;, allow browser location access when prompted</p>
         <p>• Or search for your address in the field above</p>
         <p>• Click on the map or drag the pin to fine-tune the delivery location</p>
         <p className="text-xs mt-1">Note: Location services must be enabled on your device for current location to work</p>

@@ -1,46 +1,44 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { 
-  Package, 
+import {
+  Package,
   Clock,
   CheckCircle,
-  XCircle,
   ChefHat,
   DollarSign,
   TrendingUp,
-  Users,
   ShoppingBag,
   RefreshCw,
-  AlertCircle,
   Settings
 } from 'lucide-react';
-import { formatCurrency, getOrderStatusColor, getOrderStatusText } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { shops } from '@/lib/db/data';
+import { Order, OrderItem } from '@/lib/db/schema';
 
 export default function ShopAdminDashboard() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [selectedShop, setSelectedShop] = useState<string>('shop-1');
   const [activeTab, setActiveTab] = useState<'new' | 'preparing' | 'ready' | 'completed'>('new');
   const [loading, setLoading] = useState(true);
 
-  const loadOrders = () => {
+  const loadOrders = useCallback(() => {
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
     // Filter orders for selected shop
-    const shopOrders = allOrders.filter((o: any) => o.shop_id === selectedShop);
-    setOrders(shopOrders.sort((a: any, b: any) => 
+    const shopOrders = allOrders.filter((o: Order) => o.shop_id === selectedShop);
+    setOrders(shopOrders.sort((a: Order, b: Order) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     ));
     setLoading(false);
-  };
+  }, [selectedShop]);
 
   useEffect(() => {
     loadOrders();
     // Poll for updates every 5 seconds
     const interval = setInterval(loadOrders, 5000);
     return () => clearInterval(interval);
-  }, [selectedShop]);
+  }, [loadOrders]);
 
   const newOrders = orders.filter(o => o.status === 'received');
   const preparingOrders = orders.filter(o => o.status === 'preparing');
@@ -64,7 +62,7 @@ export default function ShopAdminDashboard() {
 
   const updateOrderStatus = (orderId: string, newStatus: string) => {
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const orderIndex = allOrders.findIndex((o: any) => o.id === orderId);
+    const orderIndex = allOrders.findIndex((o: Order) => o.id === orderId);
     if (orderIndex !== -1) {
       allOrders[orderIndex].status = newStatus;
       allOrders[orderIndex].updated_at = new Date().toISOString();
@@ -73,7 +71,7 @@ export default function ShopAdminDashboard() {
     }
   };
 
-  const OrderCard = ({ order }: { order: any }) => {
+  const OrderCard = ({ order }: { order: Order }) => {
     const isPickup = order.delivery_type === 'pickup';
     
     return (
@@ -109,7 +107,7 @@ export default function ShopAdminDashboard() {
 
         {/* Items */}
         <div className="border-t pt-3 mb-3">
-          {order.items.map((item: any, index: number) => (
+          {order.items.map((item: OrderItem, index: number) => (
             <div key={index} className="text-sm mb-1">
               <span className="font-medium">{item.quantity}x</span> {item.name}
               {item.special_instructions && (

@@ -6,6 +6,7 @@ import { ArrowLeft, Trash2, Plus, Minus, ShoppingCart } from 'lucide-react';
 import { useCart } from '@/lib/store/cart';
 import { formatCurrency } from '@/lib/utils';
 import { shops } from '@/lib/db/data';
+import { MenuItem, OrderItemVariant } from '@/lib/db/schema';
 
 export default function CartPage() {
   const {
@@ -142,8 +143,8 @@ export default function CartPage() {
               <div className="space-y-4">
                 <h2 className="font-bold text-xl text-gray-900">Items ({items.length})</h2>
                 {items.map(item => {
-                  const price = (item.menuItem as any).price || item.menuItem.base_price;
-                  const selectedVariants = (item.menuItem as any).selectedVariants || [];
+                  const price = item.menuItem.base_price;
+                  const selectedVariants = (item.menuItem as MenuItem & { selectedVariants?: OrderItemVariant[] }).selectedVariants || [];
 
                   return (
                     <div key={item.menuItem.id} className="bg-white rounded-2xl shadow-lg p-6 border-2 border-gray-100 hover:shadow-xl transition-all">
@@ -155,7 +156,7 @@ export default function CartPage() {
                           {/* Show selected variants */}
                           {selectedVariants.length > 0 && (
                             <div className="mt-2 space-y-1">
-                              {selectedVariants.map((variant: any, idx: number) => (
+                              {selectedVariants.map((variant: OrderItemVariant, idx: number) => (
                                 <div key={idx} className="text-sm text-gray-700 bg-gray-50 inline-block px-2 py-1 rounded mr-2">
                                   • {variant.variant_name}
                                   {variant.price_adjustment !== 0 && (

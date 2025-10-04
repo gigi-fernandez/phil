@@ -1,9 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Clock, Phone, ChevronRight, Menu as MenuIcon, ShoppingBag, Users, Truck } from 'lucide-react';
+import { MapPin, Clock, Phone, Menu as MenuIcon, ShoppingBag, Users, Truck } from 'lucide-react';
 import { shops } from '@/lib/db/data';
 
 export default function Home() {

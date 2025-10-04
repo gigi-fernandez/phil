@@ -4,11 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  Truck, 
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  Truck,
   Home,
   Phone,
   MapPin,
@@ -17,18 +17,19 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getOrderStatusColor, getOrderStatusText } from '@/lib/utils';
 import { shops } from '@/lib/db/data';
+import { Order, OrderItem, OrderItemVariant } from '@/lib/db/schema';
 
 export default function OrderTrackingPage() {
   const params = useParams();
   const orderId = params.orderId as string;
-  const [order, setOrder] = useState<any>(null);
+  const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // Load order from localStorage
     const loadOrder = () => {
       const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-      const foundOrder = orders.find((o: any) => o.id === orderId);
+      const foundOrder = orders.find((o: Order) => o.id === orderId);
       if (foundOrder) {
         setOrder(foundOrder);
       }
@@ -49,7 +50,7 @@ export default function OrderTrackingPage() {
 
     const progressOrder = () => {
       const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-      const orderIndex = orders.findIndex((o: any) => o.id === orderId);
+      const orderIndex = orders.findIndex((o: Order) => o.id === orderId);
       
       if (orderIndex !== -1) {
         const currentOrder = orders[orderIndex];
@@ -101,7 +102,7 @@ export default function OrderTrackingPage() {
         <div className="xl:mx-32 flex flex-col items-center justify-center min-h-screen">
           <AlertCircle size={80} className="text-orange-300 mb-6" />
           <h1 className="text-4xl font-bold text-gray-900 mb-3">Order not found</h1>
-          <p className="text-gray-600 mb-8 text-lg">We couldn't find an order with ID: {orderId}</p>
+          <p className="text-gray-600 mb-8 text-lg">We couldn&apos;t find an order with ID: {orderId}</p>
           <Link
             href="/"
             className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-8 py-4 rounded-xl font-bold hover:from-orange-600 hover:to-orange-700 transition shadow-lg"
@@ -255,8 +256,8 @@ export default function OrderTrackingPage() {
               <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-gray-100">
                 <h3 className="text-2xl font-bold mb-6 text-gray-900">Order Items</h3>
                 <div className="space-y-4">
-                  {order.items.map((item: any, index: number) => {
-                    const itemPrice = item.final_price || item.price || item.base_price || 0;
+                  {order.items.map((item: OrderItem, index: number) => {
+                    const itemPrice = item.final_price || item.base_price || 0;
                     return (
                       <div key={index} className="flex justify-between items-start py-4 border-b-2 last:border-0 border-gray-100">
                         <div className="flex-1">
@@ -265,7 +266,7 @@ export default function OrderTrackingPage() {
                           </p>
                           {item.selected_variants && item.selected_variants.length > 0 && (
                             <p className="text-sm text-gray-600 mt-1">
-                              {item.selected_variants.map((v: any) => v.variant_name).join(', ')}
+                              {item.selected_variants.map((v: OrderItemVariant) => v.variant_name).join(', ')}
                             </p>
                           )}
                           {item.special_instructions && (

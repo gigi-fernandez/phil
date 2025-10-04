@@ -308,7 +308,7 @@ function MenuItemEditor({
               <label className="block text-sm font-medium mb-1">Category *</label>
               <select
                 value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value as any})}
+                onChange={(e) => setFormData({...formData, category: e.target.value as MenuItem['category']})}
                 className="w-full px-3 py-2 border rounded-lg"
               >
                 <option value="burgers">Burgers</option>

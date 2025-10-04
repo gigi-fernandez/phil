@@ -43,15 +43,15 @@ export default function MenuPage() {
     if (!selectedShopId) {
       setSelectedShop('shop-1'); // Default to first shop (Sydney CBD)
     }
-    
+
     // Create a modified item with the final price for cart
     const cartMenuItem = {
       ...item,
       price: finalPrice, // This will be used for cart calculations
       selectedVariants, // Store the selected variants
       specialInstructions
-    };
-    addItem(cartMenuItem as any, quantity, specialInstructions);
+    } as MenuItem & { price: number; selectedVariants: OrderItemVariant[] };
+    addItem(cartMenuItem, quantity, specialInstructions);
   };
 
   const handleQuickAdd = (item: MenuItem) => {
@@ -59,22 +59,18 @@ export default function MenuPage() {
     if (!selectedShopId) {
       setSelectedShop('shop-1'); // Default to first shop (Sydney CBD)
     }
-    
+
     if (item.options && item.options.length > 0) {
       // If item has options, open customization modal
       setCustomizingItem(item);
     } else {
       // If no options, add directly to cart with base price
-      const cartMenuItem = {
-        ...item,
-        price: item.base_price // Ensure price is set for items without options
-      };
-      addItem(cartMenuItem as any, 1);
+      addItem(item, 1);
     }
   };
 
   const cartTotal = cartItems.reduce((sum, item) => {
-    const price = (item.menuItem as any).price || item.menuItem.base_price;
+    const price = item.menuItem.base_price;
     return sum + (price * item.quantity);
   }, 0);
   const cartCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -199,7 +195,7 @@ export default function MenuPage() {
                         <span className="text-2xl font-bold text-orange-600">
                           {formatCurrency(item.base_price)}
                         </span>
-                        {item.options?.length > 0 && (
+                        {item.options && item.options.length > 0 && (
                           <span className="text-xs text-gray-500 block">starting from</span>
                         )}
                       </div>
@@ -210,7 +206,7 @@ export default function MenuPage() {
                           className="bg-gradient-to-r from-orange-500 to-orange-600 text-white px-5 py-3 rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all flex items-center gap-2 shadow-lg font-semibold hover:scale-105"
                         >
                           <Plus size={18} />
-                          {item.options?.length > 0 ? 'Customize' : 'Add'}
+                          {item.options && item.options.length > 0 ? 'Customize' : 'Add'}
                         </button>
                       ) : (
                         <div className="flex items-center gap-3 bg-gray-100 rounded-xl p-1">

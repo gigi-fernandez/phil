@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-  Package, 
-  Navigation, 
-  Phone, 
+import {
+  Package,
+  Navigation,
+  Phone,
   MapPin,
-  Clock,
   DollarSign,
   CheckCircle,
   Truck,
@@ -14,17 +13,18 @@ import {
 } from 'lucide-react';
 import { formatCurrency, getOrderStatusColor, getOrderStatusText } from '@/lib/utils';
 import { shops } from '@/lib/db/data';
+import { Order, OrderItem } from '@/lib/db/schema';
 
 export default function DriverDashboard() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'completed'>('pending');
   const [loading, setLoading] = useState(true);
 
   const loadOrders = () => {
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
     // Filter orders for delivery only
-    const deliveryOrders = allOrders.filter((o: any) => o.delivery_type === 'delivery');
-    setOrders(deliveryOrders.sort((a: any, b: any) => 
+    const deliveryOrders = allOrders.filter((o: Order) => o.delivery_type === 'delivery');
+    setOrders(deliveryOrders.sort((a: Order, b: Order) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     ));
     setLoading(false);
@@ -43,7 +43,7 @@ export default function DriverDashboard() {
 
   const handleAcceptOrder = (orderId: string) => {
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const orderIndex = allOrders.findIndex((o: any) => o.id === orderId);
+    const orderIndex = allOrders.findIndex((o: Order) => o.id === orderId);
     if (orderIndex !== -1) {
       allOrders[orderIndex].status = 'out_for_delivery';
       allOrders[orderIndex].updated_at = new Date().toISOString();
@@ -55,7 +55,7 @@ export default function DriverDashboard() {
 
   const handleCompleteOrder = (orderId: string) => {
     const allOrders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const orderIndex = allOrders.findIndex((o: any) => o.id === orderId);
+    const orderIndex = allOrders.findIndex((o: Order) => o.id === orderId);
     if (orderIndex !== -1) {
       allOrders[orderIndex].status = 'completed';
       allOrders[orderIndex].updated_at = new Date().toISOString();
@@ -71,9 +71,9 @@ export default function DriverDashboard() {
     return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(address)}&travelmode=driving`;
   };
 
-  const OrderCard = ({ order, showActions }: { order: any, showActions: boolean }) => {
+  const OrderCard = ({ order, showActions }: { order: Order, showActions: boolean }) => {
     const shop = shops.find(s => s.id === order.shop_id);
-    
+
     return (
       <div className="bg-white rounded-lg shadow-md p-6 mb-4">
         <div className="flex justify-between items-start mb-4">
@@ -107,7 +107,7 @@ export default function DriverDashboard() {
         <div className="border-t pt-4 mb-4">
           <h4 className="font-semibold mb-2">Order Items</h4>
           <div className="space-y-1">
-            {order.items.map((item: any, index: number) => (
+            {order.items.map((item: OrderItem, index: number) => (
               <div key={index} className="text-sm">
                 {item.quantity}x {item.name}
                 {item.special_instructions && (
@@ -158,7 +158,7 @@ export default function DriverDashboard() {
                   Accept Delivery
                 </button>
                 <a
-                  href={getDirectionsUrl(order.delivery_address)}
+                  href={getDirectionsUrl(order.delivery_address || '')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2"
@@ -177,7 +177,7 @@ export default function DriverDashboard() {
                   Complete Delivery
                 </button>
                 <a
-                  href={getDirectionsUrl(order.delivery_address)}
+                  href={getDirectionsUrl(order.delivery_address || '')}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="bg-blue-500 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2"

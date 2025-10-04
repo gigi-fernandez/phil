@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
-import { MenuItem, MenuItemOption, MenuItemVariant, OrderItemVariant } from '@/lib/db/schema';
+import { MenuItem, OrderItemVariant } from '@/lib/db/schema';
 import { formatCurrency } from '@/lib/utils';
 
 interface ItemCustomizationModalProps {

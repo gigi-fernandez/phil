@@ -5,9 +5,10 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Package, ChevronRight, ShoppingBag } from 'lucide-react';
 import { formatCurrency, getOrderStatusColor, getOrderStatusText } from '@/lib/utils';
+import { Order } from '@/lib/db/schema';
 
 export default function MyOrdersPage() {
-  const [orders, setOrders] = useState<any[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -15,7 +16,7 @@ export default function MyOrdersPage() {
     const loadOrders = () => {
       const storedOrders = JSON.parse(localStorage.getItem('orders') || '[]');
       // Sort by created_at descending (newest first)
-      const sortedOrders = storedOrders.sort((a: any, b: any) =>
+      const sortedOrders = storedOrders.sort((a: Order, b: Order) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
       setOrders(sortedOrders);

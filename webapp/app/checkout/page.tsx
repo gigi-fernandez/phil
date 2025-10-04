@@ -10,6 +10,7 @@ import { formatCurrency, generateOrderId } from '@/lib/utils';
 import { shops } from '@/lib/db/data';
 import dynamic from 'next/dynamic';
 import SimpleAddressInput from '@/components/SimpleAddressInput';
+import { MenuItem, OrderItemVariant } from '@/lib/db/schema';
 
 // Dynamically import AddressMapPicker to avoid SSR issues with Google Maps
 const AddressMapPicker = dynamic(() => import('@/components/AddressMapPicker'), { 
@@ -67,8 +68,8 @@ export default function CheckoutPage() {
       delivery_address: deliveryType === 'delivery' ? customerInfo.address : undefined,
       delivery_type: deliveryType,
       items: items.map(item => {
-        const price = (item.menuItem as any).price || item.menuItem.base_price;
-        const selectedVariants = (item.menuItem as any).selectedVariants || [];
+        const price = item.menuItem.base_price;
+        const selectedVariants = (item.menuItem as MenuItem & { selectedVariants?: OrderItemVariant[] }).selectedVariants || [];
         return {
           menu_item_id: item.menuItem.id,
           name: item.menuItem.name,
@@ -220,11 +221,11 @@ export default function CheckoutPage() {
                 {deliveryType === 'delivery' && (
                   <div className="bg-white rounded-2xl shadow-lg p-6 border-2 border-gray-100">
                     <h2 className="text-2xl font-bold mb-6 text-gray-900">Delivery Address</h2>
-                  {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY && 
+                  {process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY &&
                    process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY !== 'your_google_maps_api_key_here' ? (
                     <AddressMapPicker
                       address={customerInfo.address}
-                      onAddressChange={(address, coordinates) => {
+                      onAddressChange={(address) => {
                         setCustomerInfo({...customerInfo, address});
                       }}
                     />
@@ -301,7 +302,7 @@ export default function CheckoutPage() {
                   {/* Items */}
                   <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
                     {items.map(item => {
-                      const price = (item.menuItem as any).price || item.menuItem.base_price || 0;
+                      const price = item.menuItem.base_price || 0;
                       return (
                         <div key={item.menuItem.id} className="flex justify-between items-start text-sm">
                           <span className="flex-1 text-gray-700">
